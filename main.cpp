@@ -1,9 +1,11 @@
 #define SIZE 10
 #define max_filesystem 4
 #define max_OpenFile 5
+#define MAX_FILE_SIZE 100
 #define mkfs 1
 #define use 2
 #define cp 3
+#define ls 4
 #include<iostream>
 #include<string>
 #include<fstream>
@@ -49,6 +51,10 @@ int check(string s){
 		return 2;
 	if(temp=="cp")
 		return 3;
+	if(temp=="ls")
+		return 4;
+	if(temp=="exit")
+		exit(0);
 }
 void display(char *c[]){
 	for(int i=0;i<5;i++){
@@ -72,19 +78,73 @@ int parse(string s[],string str){
 	return k+1;
 }
 
-int mycreate(int drive,string name,char per,int size_file){
+void mycreate(int drive,string name,char per,int size_file){
 	Inode temp;
 	temp.filename=name;
 	temp.permission=per;
-	temp.size=size_file;
 	temp.file_offset=S[drive].start_offset;
-	S[drive].start_offset+=size_file;
 	S[drive].free-=1;
 	S[drive].occupied+=1;
 	S[drive].I[S[drive].openfile]=temp;
 	S[drive].openfile++;
 	S[drive].metainfo();
 }
+void display(char b[]){
+        for(int i=0;b[i]!='\0';i++)
+                cout<<b[i];
+        cout<<endl;
+}
+void byte_write(int drive,char buff[],int inode_index){
+	FILE *fd1=NULL;
+	Inode temp=S[drive].I[inode_index];
+	string name=S[drive].Drive;
+	if((fd1=fopen((char*)(name.c_str()),"rw+"))>0){
+		cout<<"successfully open"<<endl;
+	}
+	else
+		exit(0);
+	int offset=S[drive].start_offset;
+	cout<<"the Offset : "<<offset<<endl;
+	if(fseek(fd1,offset,SEEK_CUR)!=0){
+		cout<<"fseek failed"<<endl;
+		exit(0);
+	}
+	int written_bytes;
+	char buf[strlen(buff)];
+	for(int i=0;buff[i]!='\0';i++)
+		buf[i]=buff[i];
+	written_bytes=fwrite(buf,sizeof(char),sizeof(buf),fd1);
+	cout<<"written bytes : "<<written_bytes<<endl;
+	temp.file_offset=S[drive].start_offset;
+	S[drive].start_offset+=sizeof(buf);
+	cout<<"Written Successfully "<<endl;
+	temp.size=sizeof(buf);	
+	fclose(fd1);
+}
+void mywrite(string name,int drive,char buff[]){
+	int length=strlen(buff);
+	Inode temp;
+	for(int i=0;i<S[drive].openfile;i++){
+		temp=S[drive].I[i];
+		if(temp.filename==name){
+			if(length<=temp.size){
+				if(temp.permission=='w'||temp.permission=='a'){
+					cout<<"CAN BE WRITTEN"<<endl;
+					byte_write(drive,buff,i);
+					display(buff);
+				}
+				else{
+					cout<<"permission denied"<<endl;
+				}
+				break;
+			}
+			else{
+				cout<<"THERE IS NOT ENOUGHT SPACE ALLOCATED FOR THE FILE "<<length<<" ---- > "<<temp.size<<endl;
+				break;
+			}
+		}
+	}
+}	
 main(){
 	int flag,pid;
 	char *argv[SIZE];
@@ -157,11 +217,34 @@ main(){
 			string dest=s.substr(13,8);
 			for(int i=0;i<filesystem;i++){
 				if(S[i].Drive==d){
-					mycreate(i,dest,'r',10);
+					mycreate(i,dest,'w',MAX_FILE_SIZE);
 					cout<<i+1<<"th system partition super block has been updated"<<endl;
+					char buff[512];
+					memset(buff,0,sizeof(buff));
+					FILE *fd=NULL;
+					fd=fopen((char*)(source.c_str()),"r");
+					if(fd==NULL){
+						cout<<"can not open source file"<<endl;
+						exit(0);
+					}
+					int b=fread(buff,sizeof(char),sizeof(buff),fd);
+					cout<<b<<endl;
+					fclose(fd);
+					mywrite("testfile",i,buff);
 				}
 			}
 		}
 // ------------------------------------ CP ------------------------------------------------------------------------------
+		if(flag==ls){
+			string D=s.substr(3,2);
+			for(int i=0;i<filesystem;i++){
+				if(S[i].Drive==D){
+					for(int j=0;j<S[i].openfile;j++){
+						Inode temp=S[i].I[j];
+						temp.inodeinfo();
+					}
+				}
+			}
+		}
 	}
 }				
