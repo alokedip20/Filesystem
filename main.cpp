@@ -59,11 +59,26 @@ int check(string s){
 	if(temp=="rm")
 		return 5;
 }
+bool check2(string s){
+	string temp="";
+	for(int i=3;i<s.length();i++){
+		if(s[i]!=' ')
+			temp+=s[i];
+		else{
+			if(temp[1]==':')
+				return true;
+			else
+				return false;
+		}
+	}
+}
+/*
 void display(char *c[]){
 	for(int i=0;i<5;i++){
 		cout<<c[i]<<endl;
 	}
 }
+*/
 int parse(string s[],string str){
 	int k=0;
 	string temp="";
@@ -81,7 +96,7 @@ int parse(string s[],string str){
 	return k+1;
 }
 
-void mycreate(int drive,string name,char per,int size_file){
+void mycreate(int drive,string name,char per){
 	Inode temp;
 	temp.filename=name;
 	temp.permission=per;
@@ -188,6 +203,26 @@ void delete_file(int drive,string name){
 			break;
 		}
 	}
+}
+void myread(char buf[],int drive,string name){
+	Inode temp;
+	for(int i=0;i<S[drive].openfile;i++){
+		temp=S[drive].I[i];
+		if(temp.filename==name){
+			int start=temp.file_offset;
+//			int Size=temp.size;
+//			buf=new char[Size];
+			FILE *fd=NULL;
+			string D=S[drive].Drive;
+			fd=fopen((char*)(D.c_str()),"r");
+			fseek(fd,start,SEEK_CUR);
+			fread(buf,sizeof(char),sizeof(buf),fd);
+			fclose(fd);
+			cout<<"COPIED TEXT FROM SOURCE : ------------ "<<endl;
+//			display(buf);
+//			return buf;
+		}
+	}
 }		
 main(){
 	int flag,pid;
@@ -256,29 +291,60 @@ main(){
 		}
 // ---------------------------------------- USE ------------------------------------------------------------------------
 		if(flag==cp){
-			string source=s.substr(3,7);
-			string d=s.substr(11,2);
-			string dest=s.substr(13,8);
-			for(int i=0;i<filesystem;i++){
-				if(S[i].Drive==d){
-					mycreate(i,dest,'w',MAX_FILE_SIZE);
-					cout<<i+1<<"th system partition super block has been updated"<<endl;
-					char buff[512];
-					memset(buff,0,sizeof(buff));
-					FILE *fd=NULL;
-					fd=fopen((char*)(source.c_str()),"r");
-					if(fd==NULL){
-						cout<<"can not open source file"<<endl;
-						exit(0);
+			if(!check2(s)){
+				string source=s.substr(3,7);
+				string d=s.substr(11,2);
+				string dest=s.substr(13,9);
+				for(int i=0;i<filesystem;i++){
+					if(S[i].Drive==d){
+						mycreate(i,dest,'w');
+						cout<<i+1<<"th system partition super block has been updated"<<endl;
+						char buff[512];
+						memset(buff,0,sizeof(buff));
+						FILE *fd=NULL;
+						fd=fopen((char*)(source.c_str()),"r");
+						if(fd==NULL){
+							cout<<"can not open source file"<<endl;
+							exit(0);
+						}
+						int b=fread(buff,sizeof(char),sizeof(buff),fd);
+//						cout<<b<<endl;
+						fclose(fd);
+						mywrite(dest,i,buff);
 					}
-					int b=fread(buff,sizeof(char),sizeof(buff),fd);
-//					cout<<b<<endl;
-					fclose(fd);
-					mywrite(dest,i,buff);
+				}
+			}
+			else{
+//				cout<<"SECOND cp"<<endl;
+				string source_drive=s.substr(3,2);
+				string source_file=s.substr(5,9);
+				string dest_drive=s.substr(15,2);
+				string dest_file=s.substr(17,9);
+//				cout<<"source drive : "<<source_drive<<"\n Souce_File : "<<source_file<<"\nDest Drive : "<<dest_drive<<"\ndest_file : "<<dest_file<<endl;
+				for(int i=0;i<filesystem;i++){
+					if(S[i].Drive==source_drive){
+						for(int j=0;i<S[j].openfile;j++){
+							Inode temp=S[i].I[j];
+							if(temp.filename==name){
+								int Size_file=temp.size;
+								break;
+							}
+						}
+						char buffer[SIZE];
+						myread(buffer,i,source_file);
+						display(buffer);
+						for(int k=0;k<filesystem;k++){
+							if(S[k].Drive==dest_drive){
+								mycreate(k,dest_file,'w');
+								mywrite(dest_file,k,buffer);
+								break;
+							}
+						}
+						break;
+					}
 				}
 			}
 		}
-
 // ------------------------------------ CP ------------------------------------------------------------------------------
 		
 		if(flag==ls){
