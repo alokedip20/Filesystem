@@ -6,6 +6,7 @@
 #define use 2
 #define cp 3
 #define ls 4
+#define rm 5
 #include<iostream>
 #include<string>
 #include<fstream>
@@ -55,6 +56,8 @@ int check(string s){
 		return 4;
 	if(temp=="exit")
 		exit(0);
+	if(temp=="rm")
+		return 5;
 }
 void display(char *c[]){
 	for(int i=0;i<5;i++){
@@ -82,6 +85,7 @@ void mycreate(int drive,string name,char per,int size_file){
 	Inode temp;
 	temp.filename=name;
 	temp.permission=per;
+	temp.size=0;
 	temp.file_offset=S[drive].start_offset;
 	S[drive].free-=1;
 	S[drive].occupied+=1;
@@ -98,11 +102,13 @@ void byte_write(int drive,char buff[],int inode_index){
 	FILE *fd1=NULL;
 	Inode temp=S[drive].I[inode_index];
 	string name=S[drive].Drive;
-	if((fd1=fopen((char*)(name.c_str()),"rw+"))>0){
+	if((fd1=fopen((char*)(name.c_str()),"rw+"))!=NULL){
 		cout<<"successfully open"<<endl;
 	}
-	else
+	else{
+		cout<<"CAN NOT OPEN FOR WRITING"<<endl;
 		exit(0);
+	}
 	int offset=S[drive].start_offset;
 	cout<<"the Offset : "<<offset<<endl;
 	if(fseek(fd1,offset,SEEK_CUR)!=0){
@@ -118,7 +124,9 @@ void byte_write(int drive,char buff[],int inode_index){
 	temp.file_offset=S[drive].start_offset;
 	S[drive].start_offset+=sizeof(buf);
 	cout<<"Written Successfully "<<endl;
-	temp.size=sizeof(buf);	
+	temp.size=sizeof(buf);
+	cout<<"SIZE OF THE FILE : "<<temp.size<<endl;
+	S[drive].I[inode_index]=temp;	
 	fclose(fd1);
 }
 void mywrite(string name,int drive,char buff[]){
@@ -127,7 +135,7 @@ void mywrite(string name,int drive,char buff[]){
 	for(int i=0;i<S[drive].openfile;i++){
 		temp=S[drive].I[i];
 		if(temp.filename==name){
-			if(length<=temp.size){
+//			if(length<=temp.size){
 				if(temp.permission=='w'||temp.permission=='a'){
 					cout<<"CAN BE WRITTEN"<<endl;
 					byte_write(drive,buff,i);
@@ -137,14 +145,50 @@ void mywrite(string name,int drive,char buff[]){
 					cout<<"permission denied"<<endl;
 				}
 				break;
-			}
-			else{
-				cout<<"THERE IS NOT ENOUGHT SPACE ALLOCATED FOR THE FILE "<<length<<" ---- > "<<temp.size<<endl;
-				break;
-			}
+//			}
+//			else{
+//				cout<<"THERE IS NOT ENOUGHT SPACE ALLOCATED FOR THE FILE "<<length<<" ---- > "<<temp.size<<endl;
+//				break;
+//			}
 		}
 	}
-}	
+}
+
+void delete_file(int drive,string name){
+	Inode temp;
+	int start,Size,index;
+	for(int i=0;i<S[drive].openfile;i++){
+		temp=S[drive].I[i];
+		if(temp.filename==name){
+			index=i;
+			start=temp.file_offset;
+			Size=temp.size;
+			cout<<"Start offset : "<<start<<" Size of the file : "<<name<<" : "<<Size<<endl;
+			char buf[Size];
+			memset(buf,0,sizeof(buf));
+			cout<<"size of buff : "<<sizeof(buf)<<endl;
+			FILE *fd=NULL;
+			string d=S[drive].Drive;
+			fd=fopen((char*)(d.c_str()),"rw+");
+			if(fd==NULL){
+				cout<<"CAN NOT OPEN FILE SYSTEM WHILE DELETING"<<endl;
+				exit(0);
+			}
+			fseek(fd,start,SEEK_CUR);
+			int byte=fwrite(buf,sizeof(char),sizeof(buf),fd);	
+			cout<<byte<<" has been removed"<<endl;
+			for(int j=i;j<S[drive].openfile-1;j++){
+				S[drive].I[j]=S[drive].I[j+1];
+			}
+			S[drive].openfile--;
+			S[drive].free++;
+			S[drive].occupied--;
+			cout<<"SUCCESFULLY UPDATED SYSTEM"<<endl;
+			fclose(fd);
+			break;
+		}
+	}
+}		
 main(){
 	int flag,pid;
 	char *argv[SIZE];
@@ -228,13 +272,15 @@ main(){
 						exit(0);
 					}
 					int b=fread(buff,sizeof(char),sizeof(buff),fd);
-					cout<<b<<endl;
+//					cout<<b<<endl;
 					fclose(fd);
-					mywrite("testfile",i,buff);
+					mywrite(dest,i,buff);
 				}
 			}
 		}
+
 // ------------------------------------ CP ------------------------------------------------------------------------------
+		
 		if(flag==ls){
 			string D=s.substr(3,2);
 			for(int i=0;i<filesystem;i++){
@@ -243,6 +289,17 @@ main(){
 						Inode temp=S[i].I[j];
 						temp.inodeinfo();
 					}
+				}
+			}
+		}
+		if(flag==rm){
+			string target_drive=s.substr(3,2);
+			string target_file=s.substr(5,9);
+			cout<<target_drive<<" "<<target_file<<endl;
+			for(int i=0;i<filesystem;i++){
+				if(S[i].Drive==target_drive){
+					delete_file(i,target_file);
+					break;
 				}
 			}
 		}
