@@ -7,6 +7,8 @@
 #define cp 3
 #define ls 4
 #define rm 5
+#define info 6
+#define mv 8
 #include<iostream>
 #include<string>
 #include<fstream>
@@ -43,7 +45,7 @@ int filesystem=0;
 Super S[max_filesystem];
 int check(string s){
 	string temp="";
-	for(int i=0;s[i]!=' ';i++){
+	for(int i=0;s[i]!=' '&&i<s.length();i++){
 		temp+=s[i];
 	}
 	if(temp=="mkfs")
@@ -58,6 +60,12 @@ int check(string s){
 		exit(0);
 	if(temp=="rm")
 		return 5;
+	if(temp=="info")
+		return 6;
+	if(temp=="clear")
+		return 7;
+	if(temp=="mv")
+		return 8;
 }
 bool check2(string s){
 	string temp="";
@@ -71,6 +79,14 @@ bool check2(string s){
 				return false;
 		}
 	}
+}
+bool check3(string s){
+	string temp=s.substr(15,2);
+	cout<<temp<<endl;
+	for(int i=0;i<filesystem;i++)
+		if(S[i].Drive==temp)
+			return true;
+	return false;
 }
 /*
 void display(char *c[]){
@@ -108,12 +124,12 @@ void mycreate(int drive,string name,char per){
 	S[drive].openfile++;
 	S[drive].metainfo();
 }
-void display(char b[]){
-        for(int i=0;b[i]!='\0';i++)
+void display(char b[],int size){
+        for(int i=0;i<size;i++)
                 cout<<b[i];
         cout<<endl;
 }
-void byte_write(int drive,char buff[],int inode_index){
+void byte_write(int drive,char buff[],int data_size,int inode_index){
 	FILE *fd1=NULL;
 	Inode temp=S[drive].I[inode_index];
 	string name=S[drive].Drive;
@@ -126,25 +142,25 @@ void byte_write(int drive,char buff[],int inode_index){
 	}
 	int offset=S[drive].start_offset;
 	cout<<"the Offset : "<<offset<<endl;
-	if(fseek(fd1,offset,SEEK_CUR)!=0){
+	if(fseek(fd1,offset,SEEK_SET)!=0){
 		cout<<"fseek failed"<<endl;
 		exit(0);
 	}
 	int written_bytes;
-	char buf[strlen(buff)];
+/*	char buf[strlen(buff)];
 	for(int i=0;buff[i]!='\0';i++)
-		buf[i]=buff[i];
-	written_bytes=fwrite(buf,sizeof(char),sizeof(buf),fd1);
+		buf[i]=buff[i];*/
+	written_bytes=fwrite(buff,sizeof(char),data_size,fd1);
 	cout<<"written bytes : "<<written_bytes<<endl;
 	temp.file_offset=S[drive].start_offset;
-	S[drive].start_offset+=sizeof(buf);
+	S[drive].start_offset+=data_size;
 	cout<<"Written Successfully "<<endl;
-	temp.size=sizeof(buf);
+	temp.size=data_size;
 	cout<<"SIZE OF THE FILE : "<<temp.size<<endl;
 	S[drive].I[inode_index]=temp;	
 	fclose(fd1);
 }
-void mywrite(string name,int drive,char buff[]){
+void mywrite(string name,int drive,int data_size,char buff[]){
 	int length=strlen(buff);
 	Inode temp;
 	for(int i=0;i<S[drive].openfile;i++){
@@ -153,8 +169,9 @@ void mywrite(string name,int drive,char buff[]){
 //			if(length<=temp.size){
 				if(temp.permission=='w'||temp.permission=='a'){
 					cout<<"CAN BE WRITTEN"<<endl;
-					byte_write(drive,buff,i);
-					display(buff);
+					cout<<" TOTAL BYTE TO BE WRITTEN : "<<data_size<<"\n\n\n";
+					byte_write(drive,buff,data_size,i);
+					display(buff,data_size);
 				}
 				else{
 					cout<<"permission denied"<<endl;
@@ -171,17 +188,17 @@ void mywrite(string name,int drive,char buff[]){
 
 void delete_file(int drive,string name){
 	Inode temp;
-	int start,Size,index;
+	int start,Size,index,start_ref;
 	for(int i=0;i<S[drive].openfile;i++){
 		temp=S[drive].I[i];
 		if(temp.filename==name){
 			index=i;
-			start=temp.file_offset;
+			start_ref=temp.file_offset;
 			Size=temp.size;
-			cout<<"Start offset : "<<start<<" Size of the file : "<<name<<" : "<<Size<<endl;
+			cout<<"Start offset from where it will be written : "<<start_ref<<" Size of the file : "<<name<<" : "<<Size<<endl;
 			char buf[Size];
 			memset(buf,0,sizeof(buf));
-			cout<<"size of buff : "<<sizeof(buf)<<endl;
+//			cout<<"size of buff : "<<sizeof(buf)<<endl;
 			FILE *fd=NULL;
 			string d=S[drive].Drive;
 			fd=fopen((char*)(d.c_str()),"rw+");
@@ -189,22 +206,49 @@ void delete_file(int drive,string name){
 				cout<<"CAN NOT OPEN FILE SYSTEM WHILE DELETING"<<endl;
 				exit(0);
 			}
-			fseek(fd,start,SEEK_CUR);
-			int byte=fwrite(buf,sizeof(char),sizeof(buf),fd);	
-			cout<<byte<<" has been removed"<<endl;
+			fseek(fd,start_ref,SEEK_SET);
+			int byte=fwrite(buf,sizeof(char),sizeof(buf),fd);
+			fclose(fd);
+//			int end=start_ref+Size;
+			int start;	
+			cout<<byte<<" HAS BEEN REMOVED NOW GOING TO SHIFT ALL FILES"<<endl;
+			fd=fopen((char*)(d.c_str()),"rw+");
 			for(int j=i;j<S[drive].openfile-1;j++){
 				S[drive].I[j]=S[drive].I[j+1];
+				temp=S[drive].I[j];
+				start=temp.file_offset;
+				cout<<"\n\n STARTING OFFSET OF THE FILE THAT TO BE SHIFTED : "<<start<<endl;
+				Size=temp.size;
+				cout<<" TOTAL BYTES TO BE SHIFTED : "<<Size<<endl;
+				char Buf[Size],replace[Size];
+				fseek(fd,start,SEEK_SET);
+				int Read=fread(Buf,sizeof(char),sizeof(Buf),fd);
+				memset(replace,0,sizeof(replace));
+				fseek(fd,start,SEEK_SET);
+				fwrite(replace,sizeof(char),sizeof(replace),fd);
+				cout<<"SEEKED BUFFER : -------------------- "<<Read<<" ";
+/*				for(int l=0;Buf[l]!='\0';l++)
+					cout<<Buf[l];
+				cout<<endl;*/
+				display(Buf,sizeof(Buf));
+				fseek(fd,start_ref,SEEK_SET);
+				cout<<"THE NEXT FILE WILL BE STARTED FROM START_REF : "<<start_ref<<endl;
+				fwrite(Buf,sizeof(char),sizeof(Buf),fd);
+				temp.file_offset=start_ref;
+				S[drive].I[j]=temp;
+				start_ref+=Size;	
 			}
 			S[drive].openfile--;
 			S[drive].free++;
 			S[drive].occupied--;
+			S[drive].start_offset=start_ref;
 			cout<<"SUCCESFULLY UPDATED SYSTEM"<<endl;
 			fclose(fd);
 			break;
 		}
 	}
 }
-void myread(char buf[],int drive,string name){
+void myread(char buf[],int drive,int data_size,string name){
 	Inode temp;
 	for(int i=0;i<S[drive].openfile;i++){
 		temp=S[drive].I[i];
@@ -216,9 +260,9 @@ void myread(char buf[],int drive,string name){
 			string D=S[drive].Drive;
 			fd=fopen((char*)(D.c_str()),"r");
 			fseek(fd,start,SEEK_CUR);
-			fread(buf,sizeof(char),sizeof(buf),fd);
+			int b=fread(buf,sizeof(char),data_size,fd);
 			fclose(fd);
-			cout<<"COPIED TEXT FROM SOURCE : ------------ "<<endl;
+			cout<<" COPIED TEXT FROM SOURCE : ------------ READ --------> "<<b<<endl;
 //			display(buf);
 //			return buf;
 		}
@@ -310,37 +354,68 @@ main(){
 						int b=fread(buff,sizeof(char),sizeof(buff),fd);
 //						cout<<b<<endl;
 						fclose(fd);
-						mywrite(dest,i,buff);
+						mywrite(dest,i,b,buff);
 					}
 				}
 			}
 			else{
 //				cout<<"SECOND cp"<<endl;
-				string source_drive=s.substr(3,2);
-				string source_file=s.substr(5,9);
-				string dest_drive=s.substr(15,2);
-				string dest_file=s.substr(17,9);
-//				cout<<"source drive : "<<source_drive<<"\n Souce_File : "<<source_file<<"\nDest Drive : "<<dest_drive<<"\ndest_file : "<<dest_file<<endl;
-				for(int i=0;i<filesystem;i++){
-					if(S[i].Drive==source_drive){
-						for(int j=0;i<S[j].openfile;j++){
-							Inode temp=S[i].I[j];
-							if(temp.filename==name){
-								int Size_file=temp.size;
-								break;
+				if(check3(s)){
+					string source_drive=s.substr(3,2);
+					string source_file=s.substr(5,9);
+					string dest_drive=s.substr(15,2);
+					string dest_file=s.substr(17,9);
+//					cout<<"source drive : "<<source_drive<<"\n Souce_File : "<<source_file<<"\nDest Drive : "<<dest_drive<<"\ndest_file : "<<dest_file<<endl;
+					int Size_file;
+					for(int i=0;i<filesystem;i++){
+						if(S[i].Drive==source_drive){
+							for(int j=0;j<S[i].openfile;j++){
+								Inode temp=S[i].I[j];
+								if(temp.filename==source_file){
+									Size_file=temp.size;
+//									cout<<"\n\n\n BINGOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n\n\n";
+										break;
+								}
 							}
-						}
-						char buffer[SIZE];
-						myread(buffer,i,source_file);
-						display(buffer);
-						for(int k=0;k<filesystem;k++){
-							if(S[k].Drive==dest_drive){
-								mycreate(k,dest_file,'w');
-								mywrite(dest_file,k,buffer);
-								break;
+							cout<<"ACTUAL SIZE OF THE FILE : "<<Size_file<<"\n\n";
+							char buffer[Size_file];
+							for(int x=0;x<Size_file;x++)
+								buffer[x]='.';
+							cout<<"ALLOCATED SIZE : "<<sizeof(buffer)<<"\n\n\n";
+							myread(buffer,i,Size_file,source_file);
+//								display(buffer);
+							for(int k=0;k<filesystem;k++){
+								if(S[k].Drive==dest_drive){
+									mycreate(k,dest_file,'w');
+									mywrite(dest_file,k,Size_file,buffer);
+									break;
+								}
 							}
+							break;
 						}
-						break;
+					}	
+				}
+				else{
+//					cout<<" HMMMMMMMMM "<<endl;
+					string source_drive=s.substr(3,2);
+					string source_file=s.substr(5,9);
+					string dest_file=s.substr(15,7);
+					cout<<source_drive<<"/"<<source_file<<" -----> "<<dest_file<<endl;
+					int source_drive_index,dest_drive_index;
+					for(int i=0;i<filesystem;i++){
+						if(S[i].Drive==source_drive)
+							source_drive_index=i;		
+					}
+					for(int i=0;i<S[source_drive_index].openfile;i++){
+						Inode temp=S[source_drive_index].I[i];
+						if(temp.filename==source_file){
+							char FinalBuffer[temp.size];
+							myread(FinalBuffer,source_drive_index,temp.size,source_file);
+							FILE* FD=fopen((char*)(dest_file.c_str()),"w");
+							fwrite(FinalBuffer,sizeof(char),temp.size,FD);
+							fclose(FD);
+							break;
+						}
 					}
 				}
 			}
@@ -368,6 +443,51 @@ main(){
 					break;
 				}
 			}
+		}
+		if(flag==info){
+			cout<<"THE REQUIRED INFO : "<<endl;
+			for(int m=0;m<filesystem;m++)
+				S[m].metainfo();
+		}
+		if(flag==7){
+			char *cmd[]={(char*)"clear",0};
+			int p;
+			if((p=fork())==0)
+				execvp(cmd[0],cmd);
+			else
+				wait(&p);
+		}
+		if(flag==mv){
+			cout<<"MOVE OPERATION WILL BE DONE"<<endl;
+			string source_drive=s.substr(3,2);
+			string source_file=s.substr(5,9);
+			string dest_drive=s.substr(15,2);
+			string dest_file=s.substr(17,9);
+//			cout<<"source drive : "<<source_drive<<"\n Souce_File : "<<source_file<<"\nDest Drive : "<<dest_drive<<"\ndest_file : "<<dest_file<<endl;
+			int source_drive_index,dest_drive_index;
+			for(int i=0;i<filesystem;i++){
+				if(S[i].Drive==source_drive){
+					source_drive_index=i;
+				}
+				if(S[i].Drive==dest_drive){
+					dest_drive_index=i;
+				}
+			}
+			int TotalSize;
+			for(int i=0;i<S[source_drive_index].openfile;i++){
+				Inode temp=S[source_drive_index].I[i];
+				if(temp.filename==source_file){
+					TotalSize=temp.size;
+					char Buffer[TotalSize];
+					myread(Buffer,source_drive_index,TotalSize,source_file);
+					delete_file(source_drive_index,source_file);
+					mycreate(dest_drive_index,dest_file,'w');
+					mywrite(dest_file,dest_drive_index,TotalSize,Buffer);
+					break;
+				}
+			}
+//			delete_file(source_drive_index,source_file);
+//			mywrite(dest_file,dest_drive_index,TotalSize,Buffer);
 		}
 	}
 }				
