@@ -6,7 +6,7 @@ Valid Commands list:
    1.  $myfs /* execute the program */
    2.  myfs> /* prompt given by this program */
    3.  myfs>mkfs osfile1 512 10MB /* creates the filesystem on file osfile1, blocksize is taken to be 512B */
-   4.  myfs>mkfs osfile2 1024 20MB /* creates the filesystem on file osfile2, blocksize is taken to be 1024B */
+   4.  myfs>mkfs osfile2 512 20MB /* creates the filesystem on file osfile2, blocksize is taken to be 1024B */
    5.  myfs>use osfile1 as C: /* the filesystem on osfile1 will henceforth be accessed as C: */
    6.  myfs>use osfile2 as D: /* the filesystem on osfile2 will henceforth be accessed as D: */
    7.  myfs>cp osfile3 C:tesfile1 /* copy the file osfile3 from os to the filesystem C: as testfile1 */
