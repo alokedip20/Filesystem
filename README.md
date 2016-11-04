@@ -21,5 +21,7 @@ Valid Commands list:
    13.  myfs>rm C:testfile1 /* Delete the testfile1 from C: */
    14.  myfs>ls C: /* see the contents of the filesystem C: */ 
    		  testfile1a ... size
-   15.  myfs>mv D:testfile2 D:testfile2a  /* Rename  testfile2 of D: to testfile2a in D: */
-   16.  myfs>exit /* terminate the process */
+   15.  myfs>mv D:testfile2 D:testfile2a  /* Rename  testfile2 of D: to testfile2a in D: */ 
+   16.  myfs>info /*This will show all information about existing file-systems that we have created so far*/
+   17.  myfs>clear /*Clear the terminal*/
+   18.  myfs>exit /* terminate the process */
