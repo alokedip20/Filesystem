@@ -13,7 +13,7 @@ Valid Commands list:
    8.  myfs>ls C: /* see the contents of the filesystem C: */
     		testfile1 ... size
    9.  myfs>cp C:tesfile1 C:testfile1a /* copy the file testfile1 from C: to the filesystem C: as testfile1a */
-   10.  myfs>ls C: /* see the contents of the filesystem C: */
+   10. myfs>ls C: /* see the contents of the filesystem C: */
      		testfile1 ... size
     		testfile1a ... size
    11.  myfs>cp C:tesfile1 D:testfile2 /* copy the file testfile1 from C: to the filesystem D: as testfile2 */
