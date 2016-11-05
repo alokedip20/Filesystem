@@ -53,8 +53,6 @@ int filesystem=0;
 Super S[max_filesystem];
 void store(Super S[],int drive_index){
 	FILE *fd=NULL;
-//	int drive1_index=0;
-//	int drive2_index=1;
 	string D(S[drive_index].Drive);
 	fd=fopen((char*)(D.c_str()),"r+");
 	if(fd==NULL){
@@ -75,7 +73,6 @@ void store(Super S[],int drive_index){
 		fwrite(&filesystem,sizeof(filesystem),1,fd);
 	}	
 	cout<<" size of drive : ----------------- "<<sizeof(S[drive_index].Drive)<<endl;
-/*	cout<<" has been written : "<<w<<endl;*/
 	cout<<" size os inode : ----------------- "<<sizeof(Inode)<<endl;
 	cout<<"INFORMATION THAT ARE BEING STORED : "<<endl;
 	cout<<"Drive : "<<S[drive_index].Drive<<endl;
@@ -90,8 +87,6 @@ void store(Super S[],int drive_index){
 }
 void initialize(Super S[],char *drive,int drive_index){
 	FILE *fd=NULL;
-//       int drive1_index=0;
-//        int drive2_index=1;
         fd=fopen(drive,"r");
         if(fd==NULL){
                 cout<<"CAN NOT INITIALIZE SUPER BLOCK"<<endl;
@@ -110,7 +105,6 @@ void initialize(Super S[],char *drive,int drive_index){
 	if(drive_index==0){
 		fread(&filesystem,sizeof(filesystem),1,fd);
 	}
-/*      cout<<" has been written : "<<w<<endl;*/
 	cout<<"READING FROM SYSTEM :"<<endl;
         cout<<"Block Size : "<<S[drive_index].bs<<endl;
         cout<<"Total Size : "<<S[drive_index].ts<<endl;
@@ -121,54 +115,6 @@ void initialize(Super S[],char *drive,int drive_index){
 	cout<<"Drive : "<<S[drive_index].Drive<<endl;
 	cout<<"Total Partition : "<<filesystem<<endl;
         fclose(fd);
-/*
-	for(int i=1;i<filesystem;i++){
-		FILE *fd=NULL;
-		string D(S[i].Drive);
-		cout<<"DRIVE : "<<D<<endl;
-		fd=fopen((char*)(D.c_str()),"r");
-		if(fd==NULL){
-			cout<<"ERROR WHILE OPENING THE FILE : "<<endl;
-			exit(0);
-		}
-		fseek(fd,0,SEEK_SET);
-		fread(&S[i].ts,sizeof(S[i].ts),1,fd);
-	        fread(&S[i].free,sizeof(S[i].free),1,fd);
-        	fread(&S[i].occupied,sizeof(S[i].occupied),1,fd);
-      	  	fread(&S[i].start_offset,sizeof(S[i].start_offset),1,fd);
-        	fread(&S[i].openfile,sizeof(S[i].openfile),1,fd);
-        	fread(&S[i].Drive,2,1,fd);
-        	fread(S[i].I,sizeof(Inode),S[i].openfile,fd);
-	}
-	fclose(fd);*/
-/*	fd=fopen("D:","r");
-	if(fd==NULL){	
-		cout<<"CAN NOT OPEN SUPER BLOCK SECOND " <<endl;
-		exit(0);
-	}
-	fseek(fd,0,SEEK_SET);	
-	fread(&S[drive2_index].bs,sizeof(S[drive2_index].bs),1,fd);
-        fread(&S[drive2_index].ts,sizeof(S[drive2_index].ts),1,fd);
-        fread(&S[drive2_index].free,sizeof(S[drive2_index].free),1,fd);
-        fread(&S[drive2_index].occupied,sizeof(S[drive2_index].occupied),1,fd);
-        fread(&S[drive2_index].start_offset,sizeof(S[drive2_index].start_offset),1,fd);
-        fread(&S[drive2_index].openfile,sizeof(S[drive2_index].openfile),1,fd);
-        fread(&S[drive2_index].Drive,2,1,fd);
-        fread(S[drive2_index].I,sizeof(Inode),S[drive2_index].openfile,fd);
-//        fread(&filesystem,sizeof(filesystem),1,fd);
-*      cout<<" has been written : "<<w<<endl;
-        cout<<"READING FROM SYSTEM :"<<endl;
-        cout<<"Block Size : "<<S[drive2_index].bs<<endl;
-        cout<<"Total Size : "<<S[drive2_index].ts<<endl;
-        cout<<"Free : "<<S[drive2_index].free<<endl;
-        cout<<"Occupied : "<<S[drive2_index].occupied<<endl;
-        cout<<"Start Offset : "<<S[drive2_index].start_offset<<endl;
-        cout<<"No of Open File : "<<S[drive2_index].openfile<<endl;
-        cout<<"Drive : "<<S[drive2_index].Drive<<endl;
-	fclose(fd);
-//        cout<<"Total Partition : "<<filesystem<<endl;
-
-//	filesystem=1;*/
 }
 int check(string s){
 	string temp="";
@@ -215,13 +161,6 @@ bool check3(string s){
 			return true;
 	return false;
 }
-/*
-void display(char *c[]){
-	for(int i=0;i<5;i++){
-		cout<<c[i]<<endl;
-	}
-}
-*/
 int parse(string s[],string str){
 	int k=0;
 	string temp="";
@@ -240,16 +179,25 @@ int parse(string s[],string str){
 }
 
 void mycreate(int drive,string name,char per){
-	Inode temp;
-	strcpy(temp.filename,(char*)(name.c_str()));
-	temp.permission=per;
-	temp.size=0;
-	temp.file_offset=S[drive].start_offset;
-	S[drive].free-=1;
-	S[drive].occupied+=1;
-	S[drive].I[S[drive].openfile]=temp;
-	S[drive].openfile++;
-	S[drive].metainfo();
+	if(S[drive].openfile<max_OpenFile-1){
+		Inode temp;
+		strcpy(temp.filename,(char*)(name.c_str()));
+		temp.permission=per;
+		temp.size=0;
+		temp.file_offset=S[drive].start_offset;
+		S[drive].free-=1;
+		S[drive].occupied+=1;
+		S[drive].I[S[drive].openfile]=temp;
+		S[drive].openfile++;
+		S[drive].metainfo();
+	}
+	else{
+		cout<<"THE DISK IS CAPABLE OF STORING ONLY "<<max_OpenFile<<" BUT FILE LIMIT EXCEED"<<endl;
+		for(int i=0;i<filesystem;i++){
+			store(S,i);
+		}
+		exit(0);
+	}
 }
 void display(char b[],int size){
         for(int i=0;i<size;i++)
@@ -265,6 +213,9 @@ void byte_write(int drive,char buff[],int data_size,int inode_index){
 	}
 	else{
 		cout<<"CAN NOT OPEN FOR WRITING"<<endl;
+		for(int i=0;i<filesystem;i++){
+			store(S,i);
+		}
 		exit(0);
 	}
 	int offset=S[drive].start_offset;
@@ -274,9 +225,6 @@ void byte_write(int drive,char buff[],int data_size,int inode_index){
 		exit(0);
 	}
 	int written_bytes;
-/*	char buf[strlen(buff)];
-	for(int i=0;buff[i]!='\0';i++)
-		buf[i]=buff[i];*/
 	written_bytes=fwrite(buff,sizeof(char),data_size,fd1);
 	cout<<"written bytes : "<<written_bytes<<endl;
 	temp.file_offset=S[drive].start_offset;
@@ -293,7 +241,6 @@ void mywrite(string name,int drive,int data_size,char buff[]){
 	for(int i=0;i<S[drive].openfile;i++){
 		temp=S[drive].I[i];
 		if(temp.filename==name){
-//			if(length<=temp.size){
 				if(temp.permission=='w'||temp.permission=='a'){
 					cout<<"CAN BE WRITTEN"<<endl;
 					cout<<" TOTAL BYTE TO BE WRITTEN : "<<data_size<<"\n\n\n";
@@ -304,11 +251,6 @@ void mywrite(string name,int drive,int data_size,char buff[]){
 					cout<<"permission denied"<<endl;
 				}
 				break;
-//			}
-//			else{
-//				cout<<"THERE IS NOT ENOUGHT SPACE ALLOCATED FOR THE FILE "<<length<<" ---- > "<<temp.size<<endl;
-//				break;
-//			}
 		}
 	}
 }
@@ -325,7 +267,6 @@ void delete_file(int drive,string name){
 			cout<<"Start offset from where it will be written : "<<start_ref<<" Size of the file : "<<name<<" : "<<Size<<endl;
 			char buf[Size];
 			memset(buf,0,sizeof(buf));
-//			cout<<"size of buff : "<<sizeof(buf)<<endl;
 			FILE *fd=NULL;
 			string d=S[drive].Drive;
 			fd=fopen((char*)(d.c_str()),"rw+");
@@ -336,7 +277,6 @@ void delete_file(int drive,string name){
 			fseek(fd,start_ref,SEEK_SET);
 			int byte=fwrite(buf,sizeof(char),sizeof(buf),fd);
 			fclose(fd);
-//			int end=start_ref+Size;
 			int start;	
 			cout<<byte<<" HAS BEEN REMOVED NOW GOING TO SHIFT ALL FILES"<<endl;
 			fd=fopen((char*)(d.c_str()),"rw+");
@@ -354,9 +294,6 @@ void delete_file(int drive,string name){
 				fseek(fd,start,SEEK_SET);
 				fwrite(replace,sizeof(char),sizeof(replace),fd);
 				cout<<"SEEKED BUFFER : -------------------- "<<Read<<" ";
-/*				for(int l=0;Buf[l]!='\0';l++)
-					cout<<Buf[l];
-				cout<<endl;*/
 				display(Buf,sizeof(Buf));
 				fseek(fd,start_ref,SEEK_SET);
 				cout<<"THE NEXT FILE WILL BE STARTED FROM START_REF : "<<start_ref<<endl;
@@ -381,8 +318,6 @@ void myread(char buf[],int drive,int data_size,string name){
 		temp=S[drive].I[i];
 		if(temp.filename==name){
 			int start=temp.file_offset;
-//			int Size=temp.size;
-//			buf=new char[Size];
 			FILE *fd=NULL;
 			string D=S[drive].Drive;
 			fd=fopen((char*)(D.c_str()),"r");
@@ -390,8 +325,6 @@ void myread(char buf[],int drive,int data_size,string name){
 			int b=fread(buf,sizeof(char),data_size,fd);
 			fclose(fd);
 			cout<<" COPIED TEXT FROM SOURCE : ------------ READ --------> "<<b<<endl;
-//			display(buf);
-//			return buf;
 		}
 	}
 }
@@ -410,8 +343,6 @@ void mount(char *dir[]){
 	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
 }		
 main(){
-//	initialize(S,(char*)"C:",0); // LOAD THE ROOT DIRECTORY HERE C:
-//	filesystem=1;
 	mount(valid_dir_name);
 	int flag,pid;
 	char *argv[SIZE];
@@ -485,7 +416,6 @@ main(){
 				string d=s.substr(11,2);
 				string dest=s.substr(13,9);
 				for(int i=0;i<filesystem;i++){
-//					initialize(S,(char*)(d.c_str()),i);
 					if(S[i].Drive==d){
 						mycreate(i,dest,'w');
 						cout<<i+1<<"th system partition super block has been updated"<<endl;
@@ -498,21 +428,18 @@ main(){
 							exit(0);
 						}
 						int b=fread(buff,sizeof(char),sizeof(buff),fd);
-//						cout<<b<<endl;
 						fclose(fd);
 						mywrite(dest,i,b,buff);
 					}
 				}
 			}
 			else{
-//				cout<<"SECOND cp"<<endl;
 				if(check3(s)){
 					cout<<"cp c:source D:dest "<<endl;
 					string source_drive=s.substr(3,2);
 					string source_file=s.substr(5,9);
 					string dest_drive=s.substr(15,2);
 					string dest_file=s.substr(17,9);
-//					cout<<"source drive : "<<source_drive<<"\n Souce_File : "<<source_file<<"\nDest Drive : "<<dest_drive<<"\ndest_file : "<<dest_file<<endl;
 					int Size_file;
 					for(int i=0;i<filesystem;i++){
 						if(S[i].Drive==source_drive){
@@ -520,7 +447,6 @@ main(){
 								Inode temp=S[i].I[j];
 								if(temp.filename==source_file){
 									Size_file=temp.size;
-//									cout<<"\n\n\n BINGOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n\n\n";
 										break;
 								}
 							}
@@ -530,7 +456,6 @@ main(){
 								buffer[x]='.';
 							cout<<"ALLOCATED SIZE : "<<sizeof(buffer)<<"\n\n\n";
 							myread(buffer,i,Size_file,source_file);
-//								display(buffer);
 							for(int k=0;k<filesystem;k++){
 								if(S[k].Drive==dest_drive){
 									mycreate(k,dest_file,'w');
@@ -544,7 +469,6 @@ main(){
 				}
 				else{	
 					cout<<"cp c:source testfile "<<endl;
-//					cout<<" HMMMMMMMMM "<<endl;
 					string source_drive=s.substr(3,2);
 					string source_file=s.substr(5,9);
 					string dest_file=s.substr(15,7);
@@ -611,7 +535,6 @@ main(){
 			string source_file=s.substr(5,9);
 			string dest_drive=s.substr(15,2);
 			string dest_file=s.substr(17,9);
-//			cout<<"source drive : "<<source_drive<<"\n Souce_File : "<<source_file<<"\nDest Drive : "<<dest_drive<<"\ndest_file : "<<dest_file<<endl;
 			int source_drive_index,dest_drive_index;
 			for(int i=0;i<filesystem;i++){
 				if(S[i].Drive==source_drive){
@@ -634,8 +557,6 @@ main(){
 					break;
 				}
 			}
-//			delete_file(source_drive_index,source_file);
-//			mywrite(dest_file,dest_drive_index,TotalSize,Buffer);
 		}
 		if(flag==9){
 			for(int i=0;i<filesystem;i++){
