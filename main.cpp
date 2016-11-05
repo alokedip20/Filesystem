@@ -18,7 +18,7 @@
 #include<sstream>
 #include<string.h>
 using namespace std;
-char *dir[]={(char*)"C:",(char*)"D:",(char*)"E:",(char*)"F:"};
+char *valid_dir_name[]={(char*)"C:",(char*)"D:",(char*)"E:",(char*)"F:"};
 struct inode{
 	char filename[9];
 	int size,file_offset;
@@ -412,7 +412,7 @@ void mount(char *dir[]){
 main(){
 //	initialize(S,(char*)"C:",0); // LOAD THE ROOT DIRECTORY HERE C:
 //	filesystem=1;
-	mount(dir);
+	mount(valid_dir_name);
 	int flag,pid;
 	char *argv[SIZE];
 	string s,name,block,size,cmd,str[SIZE];
