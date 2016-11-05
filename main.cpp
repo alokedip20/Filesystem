@@ -23,10 +23,6 @@ struct inode{
 	char filename[9];
 	int size,file_offset;
 	char permission;
-/*	void inodeinfo(void){
-		cout<<"INODE DESCRIPTION:  "<<endl;
-		cout<<"Filename :"<<filename<<" "<<"Permission: "<<permission<<" "<<"Size :"<<size<<" "<<"File offset :"<<file_offset<<endl;
-	}*/
 };
 typedef struct inode Inode;
 void inodeinfo(Inode I){
@@ -338,9 +334,11 @@ void mount(char *dir[]){
 			flag++;
 			initialize(S,(char*)(drive.c_str()),i);
 			cout<<" SUCCESSFULLY MOUNTED :"<<endl;
+			fclose(fd);
 		}
 	}
 	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
+//	fclose(fd);
 }		
 main(){
 	mount(valid_dir_name);
