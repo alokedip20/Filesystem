@@ -338,7 +338,6 @@ void mount(char *dir[]){
 		}
 	}
 	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
-//	fclose(fd);
 }		
 main(){
 	mount(valid_dir_name);
