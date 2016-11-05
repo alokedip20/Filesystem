@@ -25,3 +25,6 @@ Valid Commands list:
    16.  myfs>info /*This will show all information about existing file-systems that we have created so far*/
    17.  myfs>clear /*Clear the terminal*/
    18.  myfs>exit /* terminate the process */
+
+#NOTE:
+	After modifying the file system do not terminate the process using [ctrl+c]. Always use "exit" to close the programme.If [ctrl+c] is used then those changes will not be written into the super block. So again when the programme will be run then previous changes will not be retained and the file system will be corrupted.
