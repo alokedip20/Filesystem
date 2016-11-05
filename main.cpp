@@ -18,31 +18,158 @@
 #include<sstream>
 #include<string.h>
 using namespace std;
+char *dir[]={(char*)"C:",(char*)"D:",(char*)"E:",(char*)"F:"};
 struct inode{
-	string filename;
+	char filename[9];
 	int size,file_offset;
 	char permission;
-	void inodeinfo(void){
+/*	void inodeinfo(void){
 		cout<<"INODE DESCRIPTION:  "<<endl;
 		cout<<"Filename :"<<filename<<" "<<"Permission: "<<permission<<" "<<"Size :"<<size<<" "<<"File offset :"<<file_offset<<endl;
-	}
+	}*/
 };
 typedef struct inode Inode;
+void inodeinfo(Inode I){
+        cout<<"INODE DESCRIPTION : "<<endl;
+        cout<<"File name : "<<I.filename<<endl;
+        cout<<"File Size : "<<I.size<<endl;
+        cout<<"File Offset : "<<I.file_offset<<endl;
+        cout<<"File Permission : "<<I.permission<<endl;
+}
 struct superblock{
         int bs,ts,free,occupied,start_offset,openfile;
         Inode I[max_OpenFile];
-        string Drive;
+        char Drive[2];
         void metainfo(void){
 		cout<<"SUPER BLOCK DESCRIPTION : "<<endl;
                 cout<<"Drive :"<<Drive<<" Block size :"<<bs<<" Total size :"<<ts<<" Free :"<<free<<" Occupied :"<<occupied<<" Start offset: "<<start_offset<<" Total open file : "<<openfile<<endl;
 		for(int i=0;i<openfile;i++){
-			I[i].inodeinfo();
+			inodeinfo(I[i]);
         	}
 	}
 };
 typedef struct superblock Super;
 int filesystem=0;
 Super S[max_filesystem];
+void store(Super S[],int drive_index){
+	FILE *fd=NULL;
+//	int drive1_index=0;
+//	int drive2_index=1;
+	string D(S[drive_index].Drive);
+	fd=fopen((char*)(D.c_str()),"r+");
+	if(fd==NULL){
+		cout<<"CAN NOT INITIALIZE SUPER BLOCK"<<endl;
+		exit(0);
+	}
+	fseek(fd,0,SEEK_SET);
+	cout<<sizeof(S[drive_index].bs)<<endl;
+	int w=fwrite(&S[drive_index].bs,sizeof(S[drive_index].bs),1,fd);
+	fwrite(&S[drive_index].ts,sizeof(S[drive_index].ts),1,fd);
+	fwrite(&S[drive_index].free,sizeof(S[drive_index].free),1,fd);
+	fwrite(&S[drive_index].occupied,sizeof(S[drive_index].occupied),1,fd);
+	fwrite(&S[drive_index].start_offset,sizeof(S[drive_index].start_offset),1,fd);
+	fwrite(&S[drive_index].openfile,sizeof(S[drive_index].openfile),1,fd);
+	fwrite(&S[drive_index].Drive,2,1,fd);
+	fwrite(S[drive_index].I,sizeof(Inode),S[drive_index].openfile,fd);
+	if(drive_index==0){
+		fwrite(&filesystem,sizeof(filesystem),1,fd);
+	}	
+	cout<<" size of drive : ----------------- "<<sizeof(S[drive_index].Drive)<<endl;
+/*	cout<<" has been written : "<<w<<endl;*/
+	cout<<" size os inode : ----------------- "<<sizeof(Inode)<<endl;
+	cout<<"INFORMATION THAT ARE BEING STORED : "<<endl;
+	cout<<"Drive : "<<S[drive_index].Drive<<endl;
+	cout<<"Block Size : "<<S[drive_index].bs<<endl;
+	cout<<"Total Size : "<<S[drive_index].ts<<endl;
+	cout<<"Free : "<<S[drive_index].free<<endl;
+	cout<<"Occupied : "<<S[drive_index].occupied<<endl;
+	cout<<"Start Offset : "<<S[drive_index].start_offset<<endl;
+	cout<<"No of Open File : "<<S[drive_index].openfile<<endl;
+	cout<<"Total Partition Created so Far : "<<filesystem<<endl;
+	fclose(fd);
+}
+void initialize(Super S[],char *drive,int drive_index){
+	FILE *fd=NULL;
+//       int drive1_index=0;
+//        int drive2_index=1;
+        fd=fopen(drive,"r");
+        if(fd==NULL){
+                cout<<"CAN NOT INITIALIZE SUPER BLOCK"<<endl;
+                exit(0);
+        }
+        fseek(fd,0,SEEK_SET);
+        cout<<sizeof(S[drive_index].bs)<<endl;
+        int w=fread(&S[drive_index].bs,sizeof(S[drive_index].bs),1,fd);
+        fread(&S[drive_index].ts,sizeof(S[drive_index].ts),1,fd);
+        fread(&S[drive_index].free,sizeof(S[drive_index].free),1,fd);
+        fread(&S[drive_index].occupied,sizeof(S[drive_index].occupied),1,fd);
+        fread(&S[drive_index].start_offset,sizeof(S[drive_index].start_offset),1,fd);
+        fread(&S[drive_index].openfile,sizeof(S[drive_index].openfile),1,fd);
+        fread(&S[drive_index].Drive,2,1,fd);
+        fread(S[drive_index].I,sizeof(Inode),S[drive_index].openfile,fd);
+	if(drive_index==0){
+		fread(&filesystem,sizeof(filesystem),1,fd);
+	}
+/*      cout<<" has been written : "<<w<<endl;*/
+	cout<<"READING FROM SYSTEM :"<<endl;
+        cout<<"Block Size : "<<S[drive_index].bs<<endl;
+        cout<<"Total Size : "<<S[drive_index].ts<<endl;
+        cout<<"Free : "<<S[drive_index].free<<endl;
+        cout<<"Occupied : "<<S[drive_index].occupied<<endl;
+        cout<<"Start Offset : "<<S[drive_index].start_offset<<endl;
+        cout<<"No of Open File : "<<S[drive_index].openfile<<endl;
+	cout<<"Drive : "<<S[drive_index].Drive<<endl;
+	cout<<"Total Partition : "<<filesystem<<endl;
+        fclose(fd);
+/*
+	for(int i=1;i<filesystem;i++){
+		FILE *fd=NULL;
+		string D(S[i].Drive);
+		cout<<"DRIVE : "<<D<<endl;
+		fd=fopen((char*)(D.c_str()),"r");
+		if(fd==NULL){
+			cout<<"ERROR WHILE OPENING THE FILE : "<<endl;
+			exit(0);
+		}
+		fseek(fd,0,SEEK_SET);
+		fread(&S[i].ts,sizeof(S[i].ts),1,fd);
+	        fread(&S[i].free,sizeof(S[i].free),1,fd);
+        	fread(&S[i].occupied,sizeof(S[i].occupied),1,fd);
+      	  	fread(&S[i].start_offset,sizeof(S[i].start_offset),1,fd);
+        	fread(&S[i].openfile,sizeof(S[i].openfile),1,fd);
+        	fread(&S[i].Drive,2,1,fd);
+        	fread(S[i].I,sizeof(Inode),S[i].openfile,fd);
+	}
+	fclose(fd);*/
+/*	fd=fopen("D:","r");
+	if(fd==NULL){	
+		cout<<"CAN NOT OPEN SUPER BLOCK SECOND " <<endl;
+		exit(0);
+	}
+	fseek(fd,0,SEEK_SET);	
+	fread(&S[drive2_index].bs,sizeof(S[drive2_index].bs),1,fd);
+        fread(&S[drive2_index].ts,sizeof(S[drive2_index].ts),1,fd);
+        fread(&S[drive2_index].free,sizeof(S[drive2_index].free),1,fd);
+        fread(&S[drive2_index].occupied,sizeof(S[drive2_index].occupied),1,fd);
+        fread(&S[drive2_index].start_offset,sizeof(S[drive2_index].start_offset),1,fd);
+        fread(&S[drive2_index].openfile,sizeof(S[drive2_index].openfile),1,fd);
+        fread(&S[drive2_index].Drive,2,1,fd);
+        fread(S[drive2_index].I,sizeof(Inode),S[drive2_index].openfile,fd);
+//        fread(&filesystem,sizeof(filesystem),1,fd);
+*      cout<<" has been written : "<<w<<endl;
+        cout<<"READING FROM SYSTEM :"<<endl;
+        cout<<"Block Size : "<<S[drive2_index].bs<<endl;
+        cout<<"Total Size : "<<S[drive2_index].ts<<endl;
+        cout<<"Free : "<<S[drive2_index].free<<endl;
+        cout<<"Occupied : "<<S[drive2_index].occupied<<endl;
+        cout<<"Start Offset : "<<S[drive2_index].start_offset<<endl;
+        cout<<"No of Open File : "<<S[drive2_index].openfile<<endl;
+        cout<<"Drive : "<<S[drive2_index].Drive<<endl;
+	fclose(fd);
+//        cout<<"Total Partition : "<<filesystem<<endl;
+
+//	filesystem=1;*/
+}
 int check(string s){
 	string temp="";
 	for(int i=0;s[i]!=' '&&i<s.length();i++){
@@ -57,7 +184,7 @@ int check(string s){
 	if(temp=="ls")
 		return 4;
 	if(temp=="exit")
-		exit(0);
+		return 9;
 	if(temp=="rm")
 		return 5;
 	if(temp=="info")
@@ -114,7 +241,7 @@ int parse(string s[],string str){
 
 void mycreate(int drive,string name,char per){
 	Inode temp;
-	temp.filename=name;
+	strcpy(temp.filename,(char*)(name.c_str()));
 	temp.permission=per;
 	temp.size=0;
 	temp.file_offset=S[drive].start_offset;
@@ -267,8 +394,25 @@ void myread(char buf[],int drive,int data_size,string name){
 //			return buf;
 		}
 	}
+}
+void mount(char *dir[]){
+	FILE *fd=NULL;
+	int flag=0;
+	for(int i=0;i<max_filesystem;i++){
+		string drive=dir[i];
+		fd=fopen((char*)(drive.c_str()),"r");
+		if(fd!=NULL){
+			flag++;
+			initialize(S,(char*)(drive.c_str()),i);
+			cout<<" SUCCESSFULLY MOUNTED :"<<endl;
+		}
+	}
+	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
 }		
 main(){
+//	initialize(S,(char*)"C:",0); // LOAD THE ROOT DIRECTORY HERE C:
+//	filesystem=1;
+	mount(dir);
 	int flag,pid;
 	char *argv[SIZE];
 	string s,name,block,size,cmd,str[SIZE];
@@ -302,7 +446,7 @@ main(){
 			else{
 				wait(&pid);
 			}
-			S[filesystem].Drive=name;
+			strcpy(S[filesystem].Drive,(char*)(name.c_str()));
 			S[filesystem].bs=atoi((char*)(block.c_str()));
 			S[filesystem].ts=1000000*atoi((char*)(size.c_str()));
 			S[filesystem].free=(S[filesystem].ts/S[filesystem].bs);
@@ -327,7 +471,7 @@ main(){
 			}
 			for(int i=0;i<filesystem;i++){
 				if(S[i].Drive==source){
-					S[i].Drive=dest;
+					strcpy(S[i].Drive,(char*)(dest.c_str()));
 					cout<<"Drive name has been changed to "<<S[i].Drive<<endl;
 					break;
 				}
@@ -336,10 +480,12 @@ main(){
 // ---------------------------------------- USE ------------------------------------------------------------------------
 		if(flag==cp){
 			if(!check2(s)){
+				cout<<"cp osfile3 C:dest "<<endl;
 				string source=s.substr(3,7);
 				string d=s.substr(11,2);
 				string dest=s.substr(13,9);
 				for(int i=0;i<filesystem;i++){
+//					initialize(S,(char*)(d.c_str()),i);
 					if(S[i].Drive==d){
 						mycreate(i,dest,'w');
 						cout<<i+1<<"th system partition super block has been updated"<<endl;
@@ -361,6 +507,7 @@ main(){
 			else{
 //				cout<<"SECOND cp"<<endl;
 				if(check3(s)){
+					cout<<"cp c:source D:dest "<<endl;
 					string source_drive=s.substr(3,2);
 					string source_file=s.substr(5,9);
 					string dest_drive=s.substr(15,2);
@@ -395,7 +542,8 @@ main(){
 						}
 					}	
 				}
-				else{
+				else{	
+					cout<<"cp c:source testfile "<<endl;
 //					cout<<" HMMMMMMMMM "<<endl;
 					string source_drive=s.substr(3,2);
 					string source_file=s.substr(5,9);
@@ -428,7 +576,7 @@ main(){
 				if(S[i].Drive==D){
 					for(int j=0;j<S[i].openfile;j++){
 						Inode temp=S[i].I[j];
-						temp.inodeinfo();
+						inodeinfo(temp);
 					}
 				}
 			}
@@ -488,6 +636,12 @@ main(){
 			}
 //			delete_file(source_drive_index,source_file);
 //			mywrite(dest_file,dest_drive_index,TotalSize,Buffer);
+		}
+		if(flag==9){
+			for(int i=0;i<filesystem;i++){
+				store(S,i);
+			}
+			exit(0);
 		}
 	}
 }				
