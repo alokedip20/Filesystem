@@ -241,7 +241,7 @@ void mywrite(string name,int drive,int data_size,char buff[]){
 					cout<<"CAN BE WRITTEN"<<endl;
 					cout<<" TOTAL BYTE TO BE WRITTEN : "<<data_size<<"\n\n\n";
 					byte_write(drive,buff,data_size,i);
-					display(buff,data_size);
+//					display(buff,data_size);
 				}
 				else{
 					cout<<"permission denied"<<endl;
@@ -338,7 +338,8 @@ void mount(char *dir[]){
 		}
 	}
 	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
-}		
+//	fclose(fd);
+}
 main(){
 	mount(valid_dir_name);
 	int flag,pid;
@@ -350,13 +351,21 @@ main(){
 		flag=check(s);
 		if(flag==mkfs){
 			name=s.substr(5,7);	
-			block=s.substr(13,3);
-			size=s.substr(17,2);
+			block=s.substr(13,4);
+			if(block[block.length()-1]==' '){
+				block=s.substr(13,3);
+				size=s.substr(17,2);
+			}
+			else
+				size=s.substr(18,2);
+			cout<<"BLOCK  : "<<block<<endl;
+//			size=s.substr(17,2);
 			cmd="dd if=/dev/zero of=";
 			cmd+=name+" bs=";
 			cmd+=block+" count=";
 			int count=1000000*atoi((char*)(size.c_str()));
-			count/=512;
+			count/=atoi((char*)(block.c_str()));
+			cout<<"COUNT : "<<count<<endl;
 			stringstream s1;
 			s1<<count;
 			cmd+=s1.str();
@@ -416,7 +425,7 @@ main(){
 					if(S[i].Drive==d){
 						mycreate(i,dest,'w');
 						cout<<i+1<<"th system partition super block has been updated"<<endl;
-						char buff[512];
+						char buff[S[i].bs];
 						memset(buff,0,sizeof(buff));
 						FILE *fd=NULL;
 						fd=fopen((char*)(source.c_str()),"r");
