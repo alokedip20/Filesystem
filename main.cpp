@@ -445,7 +445,6 @@ main(){
 						
 						for(int pass=0;pass<no_of_block;pass++){
 							fseek(fd,Start,SEEK_SET);
-							cout<<"SIZE  OF BUF : --------------- "<<sizeof(buff)<<endl;
 							int b=fread(buff,sizeof(char),sizeof(buff),fd);
 							for(int P=0;P<b;P++)
 								BUFF[R++]=buff[P];
