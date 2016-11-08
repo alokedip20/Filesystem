@@ -17,6 +17,7 @@
 #include<cstdlib>
 #include<sstream>
 #include<string.h>
+#include<cmath>
 using namespace std;
 char *valid_dir_name[]={(char*)"C:",(char*)"D:",(char*)"E:",(char*)"F:"};
 struct inode{
@@ -232,7 +233,6 @@ void byte_write(int drive,char buff[],int data_size,int inode_index){
 	fclose(fd1);
 }
 void mywrite(string name,int drive,int data_size,char buff[]){
-	int length=strlen(buff);
 	Inode temp;
 	for(int i=0;i<S[drive].openfile;i++){
 		temp=S[drive].I[i];
@@ -241,7 +241,6 @@ void mywrite(string name,int drive,int data_size,char buff[]){
 					cout<<"CAN BE WRITTEN"<<endl;
 					cout<<" TOTAL BYTE TO BE WRITTEN : "<<data_size<<"\n\n\n";
 					byte_write(drive,buff,data_size,i);
-//					display(buff,data_size);
 				}
 				else{
 					cout<<"permission denied"<<endl;
@@ -338,7 +337,11 @@ void mount(char *dir[]){
 		}
 	}
 	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
-//	fclose(fd);
+}
+std::ifstream::pos_type FileSize(const char* filename)
+{
+    std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+    return in.tellg(); 
 }
 main(){
 	mount(valid_dir_name);
@@ -359,7 +362,6 @@ main(){
 			else
 				size=s.substr(18,2);
 			cout<<"BLOCK  : "<<block<<endl;
-//			size=s.substr(17,2);
 			cmd="dd if=/dev/zero of=";
 			cmd+=name+" bs=";
 			cmd+=block+" count=";
@@ -425,17 +427,33 @@ main(){
 					if(S[i].Drive==d){
 						mycreate(i,dest,'w');
 						cout<<i+1<<"th system partition super block has been updated"<<endl;
-						char buff[S[i].bs];
-						memset(buff,0,sizeof(buff));
+						int actual_size=FileSize((char*)(source.c_str()));
+						int no_of_block=ceil((double)actual_size/S[i].bs);
+						cout<<"BLOCK : "<<no_of_block<<endl;
+						char BUFF[actual_size];
+						memset(BUFF,0,sizeof(BUFF));
 						FILE *fd=NULL;
-						fd=fopen((char*)(source.c_str()),"r");
-						if(fd==NULL){
-							cout<<"can not open source file"<<endl;
-							exit(0);
+                                                fd=fopen((char*)(source.c_str()),"r");
+                                                if(fd==NULL){
+                                                        cout<<"can not open source file"<<endl;
+                                                        exit(0);
+                                                }
+						string s1="";
+						char buff[S[i].bs];
+						int Start=0;
+						int R=0;
+						
+						for(int pass=0;pass<no_of_block;pass++){
+							fseek(fd,Start,SEEK_SET);
+							cout<<"SIZE  OF BUF : --------------- "<<sizeof(buff)<<endl;
+							int b=fread(buff,sizeof(char),sizeof(buff),fd);
+							for(int P=0;P<b;P++)
+								BUFF[R++]=buff[P];
+							
+							Start+=b;
 						}
-						int b=fread(buff,sizeof(char),sizeof(buff),fd);
 						fclose(fd);
-						mywrite(dest,i,b,buff);
+						mywrite(dest,i,actual_size,BUFF);
 					}
 				}
 			}
