@@ -182,8 +182,6 @@ void mycreate(int drive,string name,char per){
 		temp.permission=per;
 		temp.size=0;
 		temp.file_offset=S[drive].start_offset;
-		S[drive].free-=1;
-		S[drive].occupied+=1;
 		S[drive].I[S[drive].openfile]=temp;
 		S[drive].openfile++;
 		S[drive].metainfo();
@@ -248,18 +246,21 @@ void mywrite(string name,int drive,int data_size,char buff[]){
 				break;
 		}
 	}
+	S[drive].free-=ceil((double)data_size/S[drive].bs);
+	S[drive].occupied+=ceil((double)data_size/S[drive].bs);
 }
 
 void delete_file(int drive,string name){
 	Inode temp;
-	int start,Size,index,start_ref;
+	int start,Size,FILE_SIZE,index,start_ref;
 	for(int i=0;i<S[drive].openfile;i++){
 		temp=S[drive].I[i];
 		if(temp.filename==name){
 			index=i;
 			start_ref=temp.file_offset;
-			Size=temp.size;
-			cout<<"Start offset from where it will be written : "<<start_ref<<" Size of the file : "<<name<<" : "<<Size<<endl;
+			Size=FILE_SIZE=temp.size;
+			cout<<"Start offset from where it will be written : "<<start_ref<<endl;
+			cout<<"Size of the file -- "<<name<<" =  "<<Size<<endl;
 			char buf[Size];
 			memset(buf,0,sizeof(buf));
 			FILE *fd=NULL;
@@ -289,7 +290,6 @@ void delete_file(int drive,string name){
 				fseek(fd,start,SEEK_SET);
 				fwrite(replace,sizeof(char),sizeof(replace),fd);
 				cout<<"SEEKED BUFFER : -------------------- "<<Read<<" ";
-				display(Buf,sizeof(Buf));
 				fseek(fd,start_ref,SEEK_SET);
 				cout<<"THE NEXT FILE WILL BE STARTED FROM START_REF : "<<start_ref<<endl;
 				fwrite(Buf,sizeof(char),sizeof(Buf),fd);
@@ -298,8 +298,8 @@ void delete_file(int drive,string name){
 				start_ref+=Size;	
 			}
 			S[drive].openfile--;
-			S[drive].free++;
-			S[drive].occupied--;
+			S[drive].free+=ceil((double)FILE_SIZE/S[drive].bs);
+			S[drive].occupied-=ceil((double)FILE_SIZE/S[drive].bs);
 			S[drive].start_offset=start_ref;
 			cout<<"SUCCESFULLY UPDATED SYSTEM"<<endl;
 			fclose(fd);
@@ -338,10 +338,9 @@ void mount(char *dir[]){
 	}
 	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
 }
-std::ifstream::pos_type FileSize(const char* filename)
-{
-    std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
-    return in.tellg(); 
+ifstream::pos_type FileSize(const char* filename){
+	ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+	return in.tellg(); 
 }
 main(){
 	mount(valid_dir_name);
@@ -352,6 +351,7 @@ main(){
 		cout<<"myfs>";
 		getline(cin,s);
 		flag=check(s);
+// ------------------------------------------- mkfs ------------------------------------------------------------
 		if(flag==mkfs){
 			name=s.substr(5,7);	
 			block=s.substr(13,4);
@@ -388,14 +388,14 @@ main(){
 			strcpy(S[filesystem].Drive,(char*)(name.c_str()));
 			S[filesystem].bs=atoi((char*)(block.c_str()));
 			S[filesystem].ts=1000000*atoi((char*)(size.c_str()));
-			S[filesystem].free=(S[filesystem].ts/S[filesystem].bs);
+			S[filesystem].free=ceil((double)S[filesystem].ts/S[filesystem].bs);
 			S[filesystem].occupied=0;
 			S[filesystem].start_offset=sizeof(S[filesystem]);
 			S[filesystem].metainfo();
 			S[filesystem].openfile=0;
 			filesystem++;
 		}
-// --------------------------------------- MKFS ----------------------------------------------------------------------
+// --------------------------------------- use ----------------------------------------------------------------------
 		if(flag==use){
 			string dest=s.substr(15,2);
 			string source=s.substr(4,7);
@@ -416,7 +416,7 @@ main(){
 				}
 			}
 		}
-// ---------------------------------------- USE ------------------------------------------------------------------------
+// ---------------------------------------- cp ------------------------------------------------------------------------
 		if(flag==cp){
 			if(!check2(s)){
 				cout<<"cp osfile3 C:dest "<<endl;
@@ -426,10 +426,8 @@ main(){
 				for(int i=0;i<filesystem;i++){
 					if(S[i].Drive==d){
 						mycreate(i,dest,'w');
-						cout<<i+1<<"th system partition super block has been updated"<<endl;
 						int actual_size=FileSize((char*)(source.c_str()));
 						int no_of_block=ceil((double)actual_size/S[i].bs);
-						cout<<"BLOCK : "<<no_of_block<<endl;
 						char BUFF[actual_size];
 						memset(BUFF,0,sizeof(BUFF));
 						FILE *fd=NULL;
@@ -453,6 +451,8 @@ main(){
 						}
 						fclose(fd);
 						mywrite(dest,i,actual_size,BUFF);
+						cout<<"BLOCK : "<<no_of_block<<endl;
+						cout<<i+1<<"th system partition super block has been updated"<<endl;
 					}
 				}
 			}
@@ -515,7 +515,7 @@ main(){
 				}
 			}
 		}
-// ------------------------------------ CP ------------------------------------------------------------------------------
+// ------------------------------------ ls ------------------------------------------------------------------------------
 		
 		if(flag==ls){
 			string D=s.substr(3,2);
@@ -528,6 +528,7 @@ main(){
 				}
 			}
 		}
+// -------------------------------------- rm  ---------------------------------------------------------------------------
 		if(flag==rm){
 			string target_drive=s.substr(3,2);
 			string target_file=s.substr(5,9);
@@ -539,11 +540,13 @@ main(){
 				}
 			}
 		}
+// ----------------------------------- info ---------------------------------------------------------------------------
 		if(flag==info){
 			cout<<"THE REQUIRED INFO : "<<endl;
 			for(int m=0;m<filesystem;m++)
 				S[m].metainfo();
 		}
+// ---------------------------------- clear ---------------------------------------------------------------------
 		if(flag==7){
 			char *cmd[]={(char*)"clear",0};
 			int p;
@@ -552,6 +555,7 @@ main(){
 			else
 				wait(&p);
 		}
+// ------------------------------------------- mv ----------------------------------------------------------------
 		if(flag==mv){
 			cout<<"MOVE OPERATION WILL BE DONE"<<endl;
 			string source_drive=s.substr(3,2);
@@ -581,6 +585,7 @@ main(){
 				}
 			}
 		}
+// ----------------------------------------------- exit ------------------------------------------------------------
 		if(flag==9){
 			for(int i=0;i<filesystem;i++){
 				store(S,i);
