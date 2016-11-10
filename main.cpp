@@ -21,7 +21,7 @@
 using namespace std;
 char *valid_dir_name[]={(char*)"C:",(char*)"D:",(char*)"E:",(char*)"F:"};
 struct inode{
-	char filename[9];
+	char filename[15];
 	int size,file_offset;
 	char permission;
 };
@@ -151,7 +151,16 @@ bool check2(string s){
 	}
 }
 bool check3(string s){
-	string temp=s.substr(15,2);
+//	string temp=s.substr(15,2);
+	string temp,A[2];
+	int X=0;
+	for(int j=3;j<s.length();j++){
+		if(s[j]!=' ')
+			A[X]+=s[j];
+		else
+			X++;
+	}
+	temp=A[1].substr(0,2);
 	cout<<temp<<endl;
 	for(int i=0;i<filesystem;i++)
 		if(S[i].Drive==temp)
@@ -420,9 +429,19 @@ main(){
 		if(flag==cp){
 			if(!check2(s)){
 				cout<<"cp osfile3 C:dest "<<endl;
-				string source=s.substr(3,7);
-				string d=s.substr(11,2);
-				string dest=s.substr(13,9);
+				string A[3];
+				int X=0;
+				for(int j=3;j<s.length();j++){
+					if(s[j]!=' '){
+						A[X]+=s[j];
+					}
+					else{
+						X++;
+					}
+				}
+				string source=A[0];	
+				string d=A[1].substr(0,2);
+				string dest=A[1].substr(2,A[1].length()-1);
 				for(int i=0;i<filesystem;i++){
 					if(S[i].Drive==d){
 						mycreate(i,dest,'w');
@@ -459,10 +478,19 @@ main(){
 			else{
 				if(check3(s)){
 					cout<<"cp C:source D:dest "<<endl;
-					string source_drive=s.substr(3,2);
-					string source_file=s.substr(5,9);
-					string dest_drive=s.substr(15,2);
-					string dest_file=s.substr(17,9);
+					string A[4];
+					int X=0;
+					for(int j=3;j<s.length();j++){
+						if(s[j]!=' '){
+							A[X]+=s[j];
+						}
+						else
+							X++;
+					}
+					string source_drive=A[0].substr(0,2);
+					string source_file=A[0].substr(2,A[0].length()-1);
+					string dest_drive=A[1].substr(0,2);
+					string dest_file=A[1].substr(2,A[1].length()-1);
 					int Size_file;
 					for(int i=0;i<filesystem;i++){
 						if(S[i].Drive==source_drive){
@@ -492,9 +520,17 @@ main(){
 				}
 				else{	
 					cout<<"cp C:source testfile "<<endl;
-					string source_drive=s.substr(3,2);
-					string source_file=s.substr(5,9);
-					string dest_file=s.substr(15,7);
+					string A[2];
+					int X=0;
+					for(int j=3;j<s.length();j++){
+						if(s[j]!=' ')
+							A[X]+=s[j];
+						else
+							X++;
+					}
+					string source_drive=A[0].substr(0,2);
+					string source_file=A[0].substr(2,A[0].length()-1);
+					string dest_file=A[1];
 					cout<<source_drive<<"/"<<source_file<<" -----> "<<dest_file<<endl;
 					int source_drive_index,dest_drive_index;
 					for(int i=0;i<filesystem;i++){
@@ -530,8 +566,16 @@ main(){
 		}
 // -------------------------------------- rm  ---------------------------------------------------------------------------
 		if(flag==rm){
-			string target_drive=s.substr(3,2);
-			string target_file=s.substr(5,9);
+			string A[1];
+			int X=0;
+			for(int j=0;j<s.length();j++){
+				if(s[j]!=' ')
+					A[X]+=s[j];
+				else
+					X++;
+			}
+			string target_drive=A[0].substr(0,2);
+			string target_file=A[0].substr(2,A[0].length()-1);
 			cout<<target_drive<<" "<<target_file<<endl;
 			for(int i=0;i<filesystem;i++){
 				if(S[i].Drive==target_drive){
@@ -558,10 +602,19 @@ main(){
 // ------------------------------------------- mv ----------------------------------------------------------------
 		if(flag==mv){
 			cout<<"MOVE OPERATION WILL BE DONE"<<endl;
-			string source_drive=s.substr(3,2);
-			string source_file=s.substr(5,9);
-			string dest_drive=s.substr(15,2);
-			string dest_file=s.substr(17,9);
+			string A[4];
+                        int X=0;
+                        for(int j=3;j<s.length();j++){
+                        if(s[j]!=' '){
+                        	A[X]+=s[j];
+                        }
+                        else
+                        	X++;
+                        }
+                        string source_drive=A[0].substr(0,2);
+                       	string source_file=A[0].substr(2,A[0].length()-1);
+                        string dest_drive=A[1].substr(0,2);
+                       	string dest_file=A[1].substr(2,A[1].length()-1);
 			int source_drive_index,dest_drive_index;
 			for(int i=0;i<filesystem;i++){
 				if(S[i].Drive==source_drive){
