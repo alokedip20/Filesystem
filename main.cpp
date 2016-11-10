@@ -36,7 +36,7 @@ void inodeinfo(Inode I){
 struct superblock{
         int bs,ts,free,occupied,start_offset,openfile;
         Inode I[max_OpenFile];
-        char Drive[2];
+        char Drive[8];
         void metainfo(void){
 		cout<<"SUPER BLOCK DESCRIPTION : "<<endl;
                 cout<<"Drive :"<<Drive<<" Block size :"<<bs<<" Total size :"<<ts<<" Free :"<<free<<" Occupied :"<<occupied<<" Start offset: "<<start_offset<<" Total open file : "<<openfile<<endl;
@@ -332,11 +332,11 @@ void mount(char *dir[]){
 		if(fd!=NULL){
 			flag++;
 			initialize(S,(char*)(drive.c_str()),i);
-			cout<<" SUCCESSFULLY MOUNTED :"<<endl;
+			cout<<"SUCCESSFULLY MOUNTED : "<<drive<<endl;
 			fclose(fd);
 		}
 	}
-	cout<<" -------------------- MOUNTED : ---------------------------- "<<flag<<endl;
+	cout<<"-------------------- MOUNTED : ----------------------------"<<flag<<endl;
 }
 ifstream::pos_type FileSize(const char* filename){
 	ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
@@ -458,7 +458,7 @@ main(){
 			}
 			else{
 				if(check3(s)){
-					cout<<"cp c:source D:dest "<<endl;
+					cout<<"cp C:source D:dest "<<endl;
 					string source_drive=s.substr(3,2);
 					string source_file=s.substr(5,9);
 					string dest_drive=s.substr(15,2);
@@ -491,7 +491,7 @@ main(){
 					}	
 				}
 				else{	
-					cout<<"cp c:source testfile "<<endl;
+					cout<<"cp C:source testfile "<<endl;
 					string source_drive=s.substr(3,2);
 					string source_file=s.substr(5,9);
 					string dest_file=s.substr(15,7);
