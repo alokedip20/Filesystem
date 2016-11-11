@@ -151,7 +151,6 @@ bool check2(string s){
 	}
 }
 bool check3(string s){
-//	string temp=s.substr(15,2);
 	string temp,A[2];
 	int X=0;
 	for(int j=3;j<s.length();j++){
@@ -362,17 +361,6 @@ main(){
 		flag=check(s);
 // ------------------------------------------- mkfs ------------------------------------------------------------
 		if(flag==mkfs){
-/*
-			name=s.substr(5,7);	
-			block=s.substr(13,4);
-
-			if(block[block.length()-1]==' '){
-				block=s.substr(13,3);
-				size=s.substr(17,2);
-			}
-			else
-				size=s.substr(18,2);
-*/
 			string A[3];
 			int X=0;
 			for(int j=5;j<s.length();j++){
@@ -387,7 +375,6 @@ main(){
 			cout<<"BLOCK  : "<<block<<endl;
 			cmd="dd if=/dev/zero of=";
 			cmd+=name+" bs="+block+" count=";
-//			cmd+=block+" count=";
 			int count=1000000*atoi((char*)(size.c_str()));
 			count/=atoi((char*)(block.c_str()));
 			cout<<"COUNT : "<<count<<endl;
@@ -420,8 +407,16 @@ main(){
 		}
 // --------------------------------------- use ----------------------------------------------------------------------
 		if(flag==use){
-			string dest=s.substr(15,2);
-			string source=s.substr(4,7);
+			string A[3];
+			int X=0;
+			for(int j=4;j<s.length();j++){
+				if(s[j]!=' ')
+					A[X]+=s[j];
+				else
+					X++;
+			}
+			string source=A[0];
+			string dest=A[2];
 			char *argv2[]={(char*)"mv",(char*)(source.c_str()),(char*)(dest.c_str()),(char*)0};
 			if((pid=fork())==0){
 				execvp(argv2[0],argv2);
