@@ -362,18 +362,32 @@ main(){
 		flag=check(s);
 // ------------------------------------------- mkfs ------------------------------------------------------------
 		if(flag==mkfs){
+/*
 			name=s.substr(5,7);	
 			block=s.substr(13,4);
+
 			if(block[block.length()-1]==' '){
 				block=s.substr(13,3);
 				size=s.substr(17,2);
 			}
 			else
 				size=s.substr(18,2);
+*/
+			string A[3];
+			int X=0;
+			for(int j=5;j<s.length();j++){
+				if(s[j]!=' ')
+					A[X]+=s[j];
+				else
+					X++;
+			}
+			name=A[0];
+			block=A[1];
+			size=A[2].substr(0,A[2].length()-2);
 			cout<<"BLOCK  : "<<block<<endl;
 			cmd="dd if=/dev/zero of=";
-			cmd+=name+" bs=";
-			cmd+=block+" count=";
+			cmd+=name+" bs="+block+" count=";
+//			cmd+=block+" count=";
 			int count=1000000*atoi((char*)(size.c_str()));
 			count/=atoi((char*)(block.c_str()));
 			cout<<"COUNT : "<<count<<endl;
@@ -568,7 +582,7 @@ main(){
 		if(flag==rm){
 			string A[1];
 			int X=0;
-			for(int j=0;j<s.length();j++){
+			for(int j=3;j<s.length();j++){
 				if(s[j]!=' ')
 					A[X]+=s[j];
 				else
