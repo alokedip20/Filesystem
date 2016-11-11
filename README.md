@@ -1,7 +1,8 @@
 # Filesystem
 #Simple File system implementation
 
-Valid Commands listi
+Valid Commands list:
+
    1.  $./a.out /* execute the program */
    2.  myfs> /* prompt given by this program */
    3.  myfs>mkfs "Your Drive Name" "block Size" "Total Size"MB /* creates the filesystem on file "Drive name", with specified blocksize  */
